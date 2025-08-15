@@ -1,127 +1,115 @@
--- Carrega ArrayField
-local ArrayField = loadstring(game:HttpGet("https://raw.githubusercontent.com/Hosvile/Refinement/main/MC%3AArrayfield%20Library"))()
+-- // CONFIGURAÇÃO INICIAL
+local Settings = {
+    TeamCheck = true,
+    BoxEnabled = true,
+    LineEnabled = true,
+    BoxColor = Color3.fromRGB(255, 0, 0),
+    LineColor = Color3.fromRGB(255, 0, 0),
+    BoxThickness = 1,
+    LineThickness = 1
+}
 
--- Cria a janela principal
-local Window = ArrayField:CreateWindow({
-    Name = "Injection ModMenu",
-    LoadingTitle = "Injection ModMenu",
-    LoadingSubtitle = "by Luiz",
-    ConfigurationSaving = { Enabled = true, FolderName = nil, FileName = "InjectionModMenu" },
-    Discord = { Enabled = false },
-    KeySystem = false
-})
+-- // INTERFACE
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+local Frame = Instance.new("Frame", ScreenGui)
+Frame.Size = UDim2.new(0, 200, 0, 150)
+Frame.Position = UDim2.new(0.05, 0, 0.2, 0)
+Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Frame.Active = true
+Frame.Draggable = true
 
--- Variável de controle do menu
-local MenuOpen = true
+local function CreateButton(text, posY, callback)
+    local btn = Instance.new("TextButton", Frame)
+    btn.Size = UDim2.new(1, -10, 0, 25)
+    btn.Position = UDim2.new(0, 5, 0, posY)
+    btn.Text = text
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.MouseButton1Click:Connect(callback)
+end
 
--- Botão flutuante para abrir/fechar o menu
-local ScreenGui = Instance.new("ScreenGui", game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui"))
-ScreenGui.Name = "ModMenuButtonGui"
-
-local OpenButton = Instance.new("TextButton", ScreenGui)
-OpenButton.Size = UDim2.new(0, 150, 0, 50)
-OpenButton.Position = UDim2.new(0, 20, 0, 100)
-OpenButton.Text = "Fechar Menu"
-OpenButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-OpenButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-OpenButton.TextScaled = true
-
-OpenButton.MouseButton1Click:Connect(function()
-    if MenuOpen then
-        Window:Hide() -- Esconde o menu
-        OpenButton.Text = "Abrir Menu"
-        MenuOpen = false
-    else
-        Window:Show() -- Mostra o menu
-        OpenButton.Text = "Fechar Menu"
-        MenuOpen = true
-    end
+-- Botões
+CreateButton("Toggle ESP Box", 5, function()
+    Settings.BoxEnabled = not Settings.BoxEnabled
 end)
 
--- Criação da aba ESP
-local ESPTab = Window:CreateTab("ESP")
-local ESPSection = ESPTab:CreateSection("ESP Settings")
+CreateButton("Toggle ESP Linha", 35, function()
+    Settings.LineEnabled = not Settings.LineEnabled
+end)
 
--- Função para criar ESP Box
-local function CreateESPBox(player)
-    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and not player.Character.HumanoidRootPart:FindFirstChild("ESPBox") then
-        local hrp = player.Character.HumanoidRootPart
-        local box = Instance.new("BillboardGui")
-        box.Name = "ESPBox"
-        box.Size = UDim2.new(0, 100, 0, 100)
-        box.AlwaysOnTop = true
-        box.Adornee = hrp
-        local frame = Instance.new("Frame", box)
-        frame.Size = UDim2.new(1,0,1,0)
-        frame.BackgroundColor3 = Color3.fromRGB(0,255,0)
-        frame.BackgroundTransparency = 0.5
-        box.Parent = hrp
-    end
+CreateButton("Toggle Team Check", 65, function()
+    Settings.TeamCheck = not Settings.TeamCheck
+end)
+
+-- // FUNÇÕES ÚTEIS
+local function GetTeam(plr)
+    return plr.Team or nil
 end
 
--- Função para criar ESP Line
-local function CreateESPLine(player)
-    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-        local hrp = player.Character.HumanoidRootPart
-        if not hrp:FindFirstChild("ESPLine") then
-            local line = Instance.new("BillboardGui")
-            line.Name = "ESPLine"
-            line.Size = UDim2.new(0, 2, 0, 200)
-            line.AlwaysOnTop = true
-            line.Adornee = hrp
-            local frame = Instance.new("Frame", line)
-            frame.Size = UDim2.new(1,0,1,0)
-            frame.BackgroundColor3 = Color3.fromRGB(255,0,0)
-            frame.BackgroundTransparency = 0.5
-            line.Parent = hrp
-        end
-    end
+-- // CRIAÇÃO DO ESP
+local function CreateESP(player)
+    if player == game.Players.LocalPlayer then return end
+
+    local box = Drawing.new("Square")
+    box.Thickness = Settings.BoxThickness
+    box.Color = Settings.BoxColor
+    box.Filled = false
+
+    local line = Drawing.new("Line")
+    line.Thickness = Settings.LineThickness
+    line.Color = Settings.LineColor
+
+    game:GetService("RunService").RenderStepped:Connect(function()
+        pcall(function()
+            if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") or not player.Character:FindFirstChild("Humanoid") then
+                box.Visible = false
+                line.Visible = false
+                return
+            end
+
+            if Settings.TeamCheck and GetTeam(player) == GetTeam(game.Players.LocalPlayer) then
+                box.Visible = false
+                line.Visible = false
+                return
+            end
+
+            local root = player.Character.HumanoidRootPart
+            local head = player.Character:FindFirstChild("Head")
+
+            local rootPos, rootVis = workspace.CurrentCamera:WorldToViewportPoint(root.Position)
+            local headPos = workspace.CurrentCamera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
+            local legPos = workspace.CurrentCamera:WorldToViewportPoint(root.Position - Vector3.new(0, 3, 0))
+
+            if rootVis then
+                if Settings.BoxEnabled then
+                    box.Size = Vector2.new(2000 / rootPos.Z, headPos.Y - legPos.Y)
+                    box.Position = Vector2.new(rootPos.X - box.Size.X / 2, rootPos.Y - box.Size.Y / 2)
+                    box.Color = Settings.BoxColor
+                    box.Visible = true
+                else
+                    box.Visible = false
+                end
+
+                if Settings.LineEnabled then
+                    line.From = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y)
+                    line.To = Vector2.new(rootPos.X, rootPos.Y)
+                    line.Color = Settings.LineColor
+                    line.Visible = true
+                else
+                    line.Visible = false
+                end
+            else
+                box.Visible = false
+                line.Visible = false
+            end
+        end)
+    end)
 end
 
--- Button para ativar ESP Box
-ESPSection:CreateButton({
-    Name = "ESP Box",
-    Callback = function()
-        print("ESP Box ativado")
-        spawn(function()
-            for i,v in pairs(game:GetService("Players"):GetPlayers()) do
-                if v ~= game.Players.LocalPlayer then
-                    CreateESPBox(v)
-                end
-            end
-        end)
-    end
-})
+-- // Adiciona para todos os jogadores
+for _, plr in pairs(game.Players:GetPlayers()) do
+    CreateESP(plr)
+end
 
--- Button para ativar ESP Line
-ESPSection:CreateButton({
-    Name = "ESP Line",
-    Callback = function()
-        print("ESP Line ativado")
-        spawn(function()
-            for i,v in pairs(game:GetService("Players"):GetPlayers()) do
-                if v ~= game.Players.LocalPlayer then
-                    CreateESPLine(v)
-                end
-            end
-        end)
-    end
-})
-
--- Toggle para mostrar/ocultar menu rapidamente
-local MenuToggleSection = Window:CreateTab("Menu")
-local MenuToggle = MenuToggleSection:CreateSection("Menu Control")
-MenuToggle:CreateButton({
-    Name = "Abrir/Fechar Menu",
-    Callback = function()
-        if MenuOpen then
-            Window:Hide()
-            OpenButton.Text = "Abrir Menu"
-            MenuOpen = false
-        else
-            Window:Show()
-            OpenButton.Text = "Fechar Menu"
-            MenuOpen = true
-        end
-    end
-})
+-- // Quando entra novo jogador
+game.Players.PlayerAdded:Connect(CreateESP)
