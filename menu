@@ -1,162 +1,127 @@
--- =========================================
--- Injection ModMenu com ESP para celular
--- =========================================
-
+-- Carrega ArrayField
 local ArrayField = loadstring(game:HttpGet("https://raw.githubusercontent.com/Hosvile/Refinement/main/MC%3AArrayfield%20Library"))()
 
--- Criação da janela
+-- Cria a janela principal
 local Window = ArrayField:CreateWindow({
     Name = "Injection ModMenu",
     LoadingTitle = "Injection ModMenu",
-    LoadingSubtitle = "by YourName",
-    ConfigurationSaving = {Enabled = true, FolderName = "InjectionMod", FileName = "Config"},
-    Discord = {Enabled = false},
+    LoadingSubtitle = "by Luiz",
+    ConfigurationSaving = { Enabled = true, FolderName = nil, FileName = "InjectionModMenu" },
+    Discord = { Enabled = false },
     KeySystem = false
 })
 
--- ========================
--- Aba ESP
--- ========================
-local ESP_Tab = Window:CreateTab("ESP")
-local ESP_Section = ESP_Tab:CreateSection("ESP Settings")
+-- Variável de controle do menu
+local MenuOpen = true
 
-local ESPSettings = {
-    Enabled = true,
-    Box = true,
-    Line = true,
-    TeamCheck = true,
-    BoxColor = Color3.fromRGB(255,0,0),
-    LineColor = Color3.fromRGB(255,0,0)
-}
+-- Botão flutuante para abrir/fechar o menu
+local ScreenGui = Instance.new("ScreenGui", game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui"))
+ScreenGui.Name = "ModMenuButtonGui"
 
-ESP_Tab:CreateToggle({Name = "ESP Ativo", SectionParent = ESP_Section, CurrentValue = true, Flag = "ESPEnabled", Callback = function(Value) ESPSettings.Enabled = Value end})
-ESP_Tab:CreateToggle({Name = "ESP Box", SectionParent = ESP_Section, CurrentValue = true, Flag = "ESPBox", Callback = function(Value) ESPSettings.Box = Value end})
-ESP_Tab:CreateToggle({Name = "ESP Linha", SectionParent = ESP_Section, CurrentValue = true, Flag = "ESPLine", Callback = function(Value) ESPSettings.Line = Value end})
-ESP_Tab:CreateToggle({Name = "Team Check", SectionParent = ESP_Section, CurrentValue = true, Flag = "ESPTeamCheck", Callback = function(Value) ESPSettings.TeamCheck = Value end})
+local OpenButton = Instance.new("TextButton", ScreenGui)
+OpenButton.Size = UDim2.new(0, 150, 0, 50)
+OpenButton.Position = UDim2.new(0, 20, 0, 100)
+OpenButton.Text = "Fechar Menu"
+OpenButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+OpenButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+OpenButton.TextScaled = true
 
-ESP_Tab:CreateColorPicker({Name = "Cor Box", SectionParent = ESP_Section, Color = ESPSettings.BoxColor, Flag = "ESPBoxColor", Callback = function(Value) ESPSettings.BoxColor = Value end})
-ESP_Tab:CreateColorPicker({Name = "Cor Linha", SectionParent = ESP_Section, Color = ESPSettings.LineColor, Flag = "ESPLineColor", Callback = function(Value) ESPSettings.LineColor = Value end})
+OpenButton.MouseButton1Click:Connect(function()
+    if MenuOpen then
+        Window:Hide() -- Esconde o menu
+        OpenButton.Text = "Abrir Menu"
+        MenuOpen = false
+    else
+        Window:Show() -- Mostra o menu
+        OpenButton.Text = "Fechar Menu"
+        MenuOpen = true
+    end
+end)
 
--- ========================
--- Função ESP
--- ========================
-local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
-local ESPObjects = {}
+-- Criação da aba ESP
+local ESPTab = Window:CreateTab("ESP")
+local ESPSection = ESPTab:CreateSection("ESP Settings")
 
-local function CreateESP(player)
-    if player == LocalPlayer then return end
-    local box = Drawing.new("Square")
-    box.Thickness = 1
-    box.Filled = false
-    box.Color = ESPSettings.BoxColor
-
-    local line = Drawing.new("Line")
-    line.Thickness = 1
-    line.Color = ESPSettings.LineColor
-
-    ESPObjects[player] = {Box = box, Line = line}
+-- Função para criar ESP Box
+local function CreateESPBox(player)
+    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and not player.Character.HumanoidRootPart:FindFirstChild("ESPBox") then
+        local hrp = player.Character.HumanoidRootPart
+        local box = Instance.new("BillboardGui")
+        box.Name = "ESPBox"
+        box.Size = UDim2.new(0, 100, 0, 100)
+        box.AlwaysOnTop = true
+        box.Adornee = hrp
+        local frame = Instance.new("Frame", box)
+        frame.Size = UDim2.new(1,0,1,0)
+        frame.BackgroundColor3 = Color3.fromRGB(0,255,0)
+        frame.BackgroundTransparency = 0.5
+        box.Parent = hrp
+    end
 end
 
-for _, plr in pairs(Players:GetPlayers()) do CreateESP(plr) end
-Players.PlayerAdded:Connect(CreateESP)
-
-RunService.RenderStepped:Connect(function()
-    if not ESPSettings.Enabled then
-        for _, obj in pairs(ESPObjects) do
-            obj.Box.Visible = false
-            obj.Line.Visible = false
+-- Função para criar ESP Line
+local function CreateESPLine(player)
+    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        local hrp = player.Character.HumanoidRootPart
+        if not hrp:FindFirstChild("ESPLine") then
+            local line = Instance.new("BillboardGui")
+            line.Name = "ESPLine"
+            line.Size = UDim2.new(0, 2, 0, 200)
+            line.AlwaysOnTop = true
+            line.Adornee = hrp
+            local frame = Instance.new("Frame", line)
+            frame.Size = UDim2.new(1,0,1,0)
+            frame.BackgroundColor3 = Color3.fromRGB(255,0,0)
+            frame.BackgroundTransparency = 0.5
+            line.Parent = hrp
         end
-        return
     end
+end
 
-    for player, objects in pairs(ESPObjects) do
-        local char = player.Character
-        if not char or not char:FindFirstChild("HumanoidRootPart") or not char:FindFirstChild("Humanoid") then
-            objects.Box.Visible = false
-            objects.Line.Visible = false
-            continue
-        end
+-- Button para ativar ESP Box
+ESPSection:CreateButton({
+    Name = "ESP Box",
+    Callback = function()
+        print("ESP Box ativado")
+        spawn(function()
+            for i,v in pairs(game:GetService("Players"):GetPlayers()) do
+                if v ~= game.Players.LocalPlayer then
+                    CreateESPBox(v)
+                end
+            end
+        end)
+    end
+})
 
-        if ESPSettings.TeamCheck and player.Team == LocalPlayer.Team then
-            objects.Box.Visible = false
-            objects.Line.Visible = false
-            continue
-        end
+-- Button para ativar ESP Line
+ESPSection:CreateButton({
+    Name = "ESP Line",
+    Callback = function()
+        print("ESP Line ativado")
+        spawn(function()
+            for i,v in pairs(game:GetService("Players"):GetPlayers()) do
+                if v ~= game.Players.LocalPlayer then
+                    CreateESPLine(v)
+                end
+            end
+        end)
+    end
+})
 
-        local root = char.HumanoidRootPart
-        local head = char:FindFirstChild("Head")
-        local rootPos, onScreen = Camera:WorldToViewportPoint(root.Position)
-        local headPos = Camera:WorldToViewportPoint(head.Position + Vector3.new(0,0.5,0))
-        local footPos = Camera:WorldToViewportPoint(root.Position - Vector3.new(0,3,0))
-
-        if onScreen then
-            if ESPSettings.Box then
-                local width = (2000 / rootPos.Z)
-                local height = headPos.Y - footPos.Y
-                objects.Box.Size = Vector2.new(width, height)
-                objects.Box.Position = Vector2.new(rootPos.X - width/2, rootPos.Y - height/2)
-                objects.Box.Color = ESPSettings.BoxColor
-                objects.Box.Visible = true
-            else objects.Box.Visible = false end
-
-            if ESPSettings.Line then
-                objects.Line.From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y)
-                objects.Line.To = Vector2.new(rootPos.X, rootPos.Y)
-                objects.Line.Color = ESPSettings.LineColor
-                objects.Line.Visible = true
-            else objects.Line.Visible = false end
+-- Toggle para mostrar/ocultar menu rapidamente
+local MenuToggleSection = Window:CreateTab("Menu")
+local MenuToggle = MenuToggleSection:CreateSection("Menu Control")
+MenuToggle:CreateButton({
+    Name = "Abrir/Fechar Menu",
+    Callback = function()
+        if MenuOpen then
+            Window:Hide()
+            OpenButton.Text = "Abrir Menu"
+            MenuOpen = false
         else
-            objects.Box.Visible = false
-            objects.Line.Visible = false
+            Window:Show()
+            OpenButton.Text = "Fechar Menu"
+            MenuOpen = true
         end
     end
-end)
-
--- ========================
--- Botões flutuantes para celular
--- ========================
-local CoreGui = game:GetService("CoreGui")
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "InjectionModMenuGui"
-ScreenGui.Parent = CoreGui
-
--- Botão principal para abrir/fechar menu
-local ToggleButton = Instance.new("TextButton")
-ToggleButton.Size = UDim2.new(0,120,0,40)
-ToggleButton.Position = UDim2.new(0,20,0,20)
-ToggleButton.BackgroundColor3 = Color3.fromRGB(50,50,50)
-ToggleButton.TextColor3 = Color3.new(1,1,1)
-ToggleButton.Text = "Menu"
-ToggleButton.Parent = ScreenGui
-
--- Botão "Abrir Menu" que aparece somente quando o menu está fechado
-local OpenMenuButton = Instance.new("TextButton")
-OpenMenuButton.Size = UDim2.new(0,120,0,40)
-OpenMenuButton.Position = UDim2.new(0,20,0,20)
-OpenMenuButton.BackgroundColor3 = Color3.fromRGB(50,50,50)
-OpenMenuButton.TextColor3 = Color3.new(1,1,1)
-OpenMenuButton.Text = "Abrir Menu"
-OpenMenuButton.Visible = false
-OpenMenuButton.Parent = ScreenGui
-
--- Controle da visibilidade
-local MenuVisible = true
-
-ToggleButton.MouseButton1Click:Connect(function()
-    Window:Hide()
-    MenuVisible = false
-    ToggleButton.Visible = false
-    OpenMenuButton.Visible = true
-end)
-
-OpenMenuButton.MouseButton1Click:Connect(function()
-    Window:Show()
-    MenuVisible = true
-    ToggleButton.Visible = true
-    OpenMenuButton.Visible = false
-end)
-
-print("Injection ModMenu carregado! Use os botões flutuantes para abrir/fechar o menu no celular.")
+})
