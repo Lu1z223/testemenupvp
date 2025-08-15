@@ -1,7 +1,8 @@
 -- =========================================
--- ArrayField Injection ModMenu com ESP
+-- Injection ModMenu com ESP para celular
 -- =========================================
 
+-- Biblioteca ArrayField
 local ArrayField = loadstring(game:HttpGet("https://raw.githubusercontent.com/Hosvile/Refinement/main/MC%3AArrayfield%20Library"))()
 
 -- Criação da janela
@@ -104,7 +105,6 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local ESPObjects = {}
 
--- Criação de ESP para cada jogador
 local function CreateESP(player)
     if player == LocalPlayer then return end
     local box = Drawing.new("Square")
@@ -124,7 +124,6 @@ for _, plr in pairs(Players:GetPlayers()) do
 end
 Players.PlayerAdded:Connect(CreateESP)
 
--- Loop de Renderização do ESP
 RunService.RenderStepped:Connect(function()
     if not ESPSettings.Enabled then
         for _, obj in pairs(ESPObjects) do
@@ -155,7 +154,6 @@ RunService.RenderStepped:Connect(function()
         local footPos = Camera:WorldToViewportPoint(root.Position - Vector3.new(0,3,0))
 
         if onScreen then
-            -- Box
             if ESPSettings.Box then
                 local width = (2000 / rootPos.Z)
                 local height = headPos.Y - footPos.Y
@@ -167,7 +165,6 @@ RunService.RenderStepped:Connect(function()
                 objects.Box.Visible = false
             end
 
-            -- Linha
             if ESPSettings.Line then
                 objects.Line.From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y)
                 objects.Line.To = Vector2.new(rootPos.X, rootPos.Y)
@@ -184,35 +181,28 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- ========================
--- Botão mostrar/esconder menu
+-- Botão flutuante para celular
 -- ========================
-local MenuToggleSection = ESP_Tab:CreateSection("Menu Toggle")
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "InjectionModMenuGui"
+ScreenGui.Parent = game:GetService("CoreGui")
+
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Size = UDim2.new(0,120,0,40)
+ToggleButton.Position = UDim2.new(0,20,0,20)
+ToggleButton.BackgroundColor3 = Color3.fromRGB(50,50,50)
+ToggleButton.TextColor3 = Color3.new(1,1,1)
+ToggleButton.Text = "Menu"
+ToggleButton.Parent = ScreenGui
+
 local MenuVisible = true
-
-ESP_Tab:CreateButton({
-    Name = "Fechar Menu",
-    SectionParent = MenuToggleSection,
-    Callback = function()
+ToggleButton.MouseButton1Click:Connect(function()
+    if MenuVisible then
         Window:Hide()
-        MenuVisible = false
+    else
+        Window:Show()
     end
-})
-
--- Criar botão externo para mostrar novamente
-local ShowButton = Instance.new("TextButton", game.CoreGui)
-ShowButton.Size = UDim2.new(0,120,0,35)
-ShowButton.Position = UDim2.new(0,20,0,20)
-ShowButton.Text = "Mostrar Menu"
-ShowButton.BackgroundColor3 = Color3.fromRGB(50,50,50)
-ShowButton.TextColor3 = Color3.new(1,1,1)
-ShowButton.Visible = false
-ShowButton.MouseButton1Click:Connect(function()
-    Window:Show()
-    ShowButton.Visible = false
-    MenuVisible = true
+    MenuVisible = not MenuVisible
 end)
 
--- Atualiza visibilidade do botão
-RunService.RenderStepped:Connect(function()
-    ShowButton.Visible = not MenuVisible
-end)
+print("Injection ModMenu carregado! Use o botão flutuante para abrir/fechar o menu no celular.")
