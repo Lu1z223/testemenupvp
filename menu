@@ -1,103 +1,102 @@
+-- =========================================
+-- ArrayField Injection ModMenu com ESP
+-- =========================================
+
+local ArrayField = loadstring(game:HttpGet("https://raw.githubusercontent.com/Hosvile/Refinement/main/MC%3AArrayfield%20Library"))()
+
+-- Criação da janela
+local Window = ArrayField:CreateWindow({
+    Name = "Injection ModMenu",
+    LoadingTitle = "Injection ModMenu",
+    LoadingSubtitle = "by YourName",
+    ConfigurationSaving = {Enabled = true, FolderName = "InjectionMod", FileName = "Config"},
+    Discord = {Enabled = false},
+    KeySystem = false
+})
+
 -- ========================
--- CONFIGURAÇÕES DO ESP
+-- Aba ESP
 -- ========================
-local Settings = {
-    MenuVisible = true,
-    ESPVisible = false,
-    BoxEnabled = true,
-    LineEnabled = true,
+local ESP_Tab = Window:CreateTab("ESP")
+local ESP_Section = ESP_Tab:CreateSection("ESP Settings")
+
+-- Configurações ESP
+local ESPSettings = {
+    Enabled = true,
+    Box = true,
+    Line = true,
     TeamCheck = true,
     BoxColor = Color3.fromRGB(255,0,0),
-    LineColor = Color3.fromRGB(255,0,0),
-    BoxThickness = 1,
-    LineThickness = 1
+    LineColor = Color3.fromRGB(255,0,0)
 }
 
--- ========================
--- GUI
--- ========================
-local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
-ScreenGui.Name = "ESPMenu"
+-- Toggle ESP Ativo
+ESP_Tab:CreateToggle({
+    Name = "ESP Ativo",
+    SectionParent = ESP_Section,
+    CurrentValue = true,
+    Flag = "ESPEnabled",
+    Callback = function(Value)
+        ESPSettings.Enabled = Value
+    end
+})
 
-local Frame = Instance.new("Frame", ScreenGui)
-Frame.Size = UDim2.new(0, 220, 0, 200)
-Frame.Position = UDim2.new(0,50,0,50)
-Frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
-Frame.Active = true
-Frame.Draggable = true
+-- Toggle Box
+ESP_Tab:CreateToggle({
+    Name = "ESP Box",
+    SectionParent = ESP_Section,
+    CurrentValue = true,
+    Flag = "ESPBox",
+    Callback = function(Value)
+        ESPSettings.Box = Value
+    end
+})
 
-local function CreateButton(text, posY, callback)
-    local btn = Instance.new("TextButton", Frame)
-    btn.Size = UDim2.new(1, -10, 0, 25)
-    btn.Position = UDim2.new(0,5,0,posY)
-    btn.Text = text
-    btn.BackgroundColor3 = Color3.fromRGB(50,50,50)
-    btn.TextColor3 = Color3.new(1,1,1)
-    btn.MouseButton1Click:Connect(callback)
-    return btn
-end
+-- Toggle Linha
+ESP_Tab:CreateToggle({
+    Name = "ESP Linha",
+    SectionParent = ESP_Section,
+    CurrentValue = true,
+    Flag = "ESPLine",
+    Callback = function(Value)
+        ESPSettings.Line = Value
+    end
+})
 
--- Botão para mostrar/ocultar ESP
-CreateButton("ESP", 5, function()
-    Settings.ESPVisible = not Settings.ESPVisible
-end)
+-- Toggle Team Check
+ESP_Tab:CreateToggle({
+    Name = "Team Check",
+    SectionParent = ESP_Section,
+    CurrentValue = true,
+    Flag = "ESPTeamCheck",
+    Callback = function(Value)
+        ESPSettings.TeamCheck = Value
+    end
+})
 
--- Botão para fechar menu
-CreateButton("Fechar Menu", 35, function()
-    Settings.MenuVisible = false
-end)
+-- ColorPickers
+ESP_Tab:CreateColorPicker({
+    Name = "Cor Box",
+    SectionParent = ESP_Section,
+    Color = ESPSettings.BoxColor,
+    Flag = "ESPBoxColor",
+    Callback = function(Value)
+        ESPSettings.BoxColor = Value
+    end
+})
 
--- Botão reaparecer menu (fora do Frame)
-local ShowButton = Instance.new("TextButton", ScreenGui)
-ShowButton.Size = UDim2.new(0,100,0,30)
-ShowButton.Position = UDim2.new(0,20,0,20)
-ShowButton.Text = "Mostrar Menu"
-ShowButton.BackgroundColor3 = Color3.fromRGB(50,50,50)
-ShowButton.TextColor3 = Color3.new(1,1,1)
-ShowButton.Visible = false
-ShowButton.MouseButton1Click:Connect(function()
-    Settings.MenuVisible = true
-    ShowButton.Visible = false
-end)
-
--- Atualiza visibilidade do menu
-game:GetService("RunService").RenderStepped:Connect(function()
-    Frame.Visible = Settings.MenuVisible
-    ShowButton.Visible = not Settings.MenuVisible
-end)
-
--- ========================
--- Checkboxes de ESP
--- ========================
-local CheckStartY = 70
-local function CreateCheckbox(text, posY, settingName)
-    local cb = Instance.new("TextButton", Frame)
-    cb.Size = UDim2.new(1, -10, 0, 25)
-    cb.Position = UDim2.new(0,5,0,posY)
-    cb.Text = text .. " [ON]"
-    cb.BackgroundColor3 = Color3.fromRGB(50,50,50)
-    cb.TextColor3 = Color3.new(1,1,1)
-    cb.Visible = false
-    cb.MouseButton1Click:Connect(function()
-        Settings[settingName] = not Settings[settingName]
-        cb.Text = text .. (Settings[settingName] and " [ON]" or " [OFF]")
-    end)
-    return cb
-end
-
-local ESPBoxCB = CreateCheckbox("ESP Box", CheckStartY, "BoxEnabled")
-local ESPLineCB = CreateCheckbox("ESP Linha", CheckStartY + 30, "LineEnabled")
-local TeamCheckCB = CreateCheckbox("Team Check", CheckStartY + 60, "TeamCheck")
-
--- Atualiza visibilidade dos checkboxes
-game:GetService("RunService").RenderStepped:Connect(function()
-    ESPBoxCB.Visible = Settings.ESPVisible
-    ESPLineCB.Visible = Settings.ESPVisible
-    TeamCheckCB.Visible = Settings.ESPVisible
-end)
+ESP_Tab:CreateColorPicker({
+    Name = "Cor Linha",
+    SectionParent = ESP_Section,
+    Color = ESPSettings.LineColor,
+    Flag = "ESPLineColor",
+    Callback = function(Value)
+        ESPSettings.LineColor = Value
+    end
+})
 
 -- ========================
--- FUNÇÃO DE ESP
+-- Função ESP
 -- ========================
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
@@ -105,16 +104,17 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local ESPObjects = {}
 
+-- Criação de ESP para cada jogador
 local function CreateESP(player)
     if player == LocalPlayer then return end
     local box = Drawing.new("Square")
-    box.Thickness = Settings.BoxThickness
+    box.Thickness = 1
     box.Filled = false
-    box.Color = Settings.BoxColor
+    box.Color = ESPSettings.BoxColor
 
     local line = Drawing.new("Line")
-    line.Thickness = Settings.LineThickness
-    line.Color = Settings.LineColor
+    line.Thickness = 1
+    line.Color = ESPSettings.LineColor
 
     ESPObjects[player] = {Box = box, Line = line}
 end
@@ -124,7 +124,16 @@ for _, plr in pairs(Players:GetPlayers()) do
 end
 Players.PlayerAdded:Connect(CreateESP)
 
+-- Loop de Renderização do ESP
 RunService.RenderStepped:Connect(function()
+    if not ESPSettings.Enabled then
+        for _, obj in pairs(ESPObjects) do
+            obj.Box.Visible = false
+            obj.Line.Visible = false
+        end
+        return
+    end
+
     for player, objects in pairs(ESPObjects) do
         local char = player.Character
         if not char or not char:FindFirstChild("HumanoidRootPart") or not char:FindFirstChild("Humanoid") then
@@ -133,7 +142,7 @@ RunService.RenderStepped:Connect(function()
             continue
         end
 
-        if Settings.TeamCheck and player.Team == LocalPlayer.Team then
+        if ESPSettings.TeamCheck and player.Team == LocalPlayer.Team then
             objects.Box.Visible = false
             objects.Line.Visible = false
             continue
@@ -146,21 +155,23 @@ RunService.RenderStepped:Connect(function()
         local footPos = Camera:WorldToViewportPoint(root.Position - Vector3.new(0,3,0))
 
         if onScreen then
-            if Settings.BoxEnabled then
+            -- Box
+            if ESPSettings.Box then
                 local width = (2000 / rootPos.Z)
                 local height = headPos.Y - footPos.Y
                 objects.Box.Size = Vector2.new(width, height)
                 objects.Box.Position = Vector2.new(rootPos.X - width/2, rootPos.Y - height/2)
-                objects.Box.Color = Settings.BoxColor
+                objects.Box.Color = ESPSettings.BoxColor
                 objects.Box.Visible = true
             else
                 objects.Box.Visible = false
             end
 
-            if Settings.LineEnabled then
+            -- Linha
+            if ESPSettings.Line then
                 objects.Line.From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y)
                 objects.Line.To = Vector2.new(rootPos.X, rootPos.Y)
-                objects.Line.Color = Settings.LineColor
+                objects.Line.Color = ESPSettings.LineColor
                 objects.Line.Visible = true
             else
                 objects.Line.Visible = false
@@ -170,4 +181,38 @@ RunService.RenderStepped:Connect(function()
             objects.Line.Visible = false
         end
     end
+end)
+
+-- ========================
+-- Botão mostrar/esconder menu
+-- ========================
+local MenuToggleSection = ESP_Tab:CreateSection("Menu Toggle")
+local MenuVisible = true
+
+ESP_Tab:CreateButton({
+    Name = "Fechar Menu",
+    SectionParent = MenuToggleSection,
+    Callback = function()
+        Window:Hide()
+        MenuVisible = false
+    end
+})
+
+-- Criar botão externo para mostrar novamente
+local ShowButton = Instance.new("TextButton", game.CoreGui)
+ShowButton.Size = UDim2.new(0,120,0,35)
+ShowButton.Position = UDim2.new(0,20,0,20)
+ShowButton.Text = "Mostrar Menu"
+ShowButton.BackgroundColor3 = Color3.fromRGB(50,50,50)
+ShowButton.TextColor3 = Color3.new(1,1,1)
+ShowButton.Visible = false
+ShowButton.MouseButton1Click:Connect(function()
+    Window:Show()
+    ShowButton.Visible = false
+    MenuVisible = true
+end)
+
+-- Atualiza visibilidade do botão
+RunService.RenderStepped:Connect(function()
+    ShowButton.Visible = not MenuVisible
 end)
