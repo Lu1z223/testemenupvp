@@ -1,115 +1,145 @@
--- // CONFIGURAÇÃO INICIAL
-local Settings = {
-    TeamCheck = true,
-    BoxEnabled = true,
-    LineEnabled = true,
-    BoxColor = Color3.fromRGB(255, 0, 0),
-    LineColor = Color3.fromRGB(255, 0, 0),
-    BoxThickness = 1,
-    LineThickness = 1
+// =======================
+// Variáveis globais ESP
+// =======================
+static bool espBox = true;
+static bool espLine = true;
+static bool teamCheck = true;
+static ImVec4 boxColor = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
+static ImVec4 lineColor = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
+
+// Estrutura de exemplo para jogador
+struct Player {
+    bool isEnemy;
+    bool isAlive;
+    ImVec2 headPos;
+    ImVec2 footPos;
+    ImVec2 screenPos;
+};
+
+// Função para verificar se está na tela
+bool WorldToScreen(const Vec3& worldPos, ImVec2& screenPos) {
+    // Você vai precisar substituir pelo seu método de conversão 3D->2D
+    // Aqui é só placeholder
+    screenPos = ImVec2(worldPos.x, worldPos.y);
+    return true; // true = visível
 }
 
--- // INTERFACE
-local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
-local Frame = Instance.new("Frame", ScreenGui)
-Frame.Size = UDim2.new(0, 200, 0, 150)
-Frame.Position = UDim2.new(0.05, 0, 0.2, 0)
-Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-Frame.Active = true
-Frame.Draggable = true
+// =======================
+// Função de desenho ESP
+// =======================
+void DrawESPForPlayer(const Player& player, ImDrawList* drawList) {
+    if (!player.isAlive) return;
+    if (teamCheck && !player.isEnemy) return;
 
-local function CreateButton(text, posY, callback)
-    local btn = Instance.new("TextButton", Frame)
-    btn.Size = UDim2.new(1, -10, 0, 25)
-    btn.Position = UDim2.new(0, 5, 0, posY)
-    btn.Text = text
-    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.MouseButton1Click:Connect(callback)
-end
+    float boxHeight = player.footPos.y - player.headPos.y;
+    float boxWidth = boxHeight / 2.0f;
 
--- Botões
-CreateButton("Toggle ESP Box", 5, function()
-    Settings.BoxEnabled = not Settings.BoxEnabled
-end)
+    // Caixa
+    if (espBox) {
+        drawList->AddRect(
+            ImVec2(player.headPos.x - boxWidth / 2, player.headPos.y),
+            ImVec2(player.headPos.x + boxWidth / 2, player.footPos.y),
+            ImColor(boxColor),
+            0.0f,
+            0,
+            1.0f
+        );
+    }
 
-CreateButton("Toggle ESP Linha", 35, function()
-    Settings.LineEnabled = not Settings.LineEnabled
-end)
+    // Linha
+    if (espLine) {
+        ImVec2 screenCenter = ImVec2(ImGui::GetIO().DisplaySize.x / 2, ImGui::GetIO().DisplaySize.y);
+        drawList->AddLine(
+            screenCenter,
+            player.screenPos,
+            ImColor(lineColor),
+            1.0f
+        );
+    }
+}
 
-CreateButton("Toggle Team Check", 65, function()
-    Settings.TeamCheck = not Settings.TeamCheck
-end)
+// =======================
+// Loop Metal + ImGui
+// =======================
+- (void)drawInMTKView:(MTKView*)view
+{
+    ImGuiIO& io = ImGui::GetIO();
+    io.DisplaySize.x = view.bounds.size.width;
+    io.DisplaySize.y = view.bounds.size.height;
 
--- // FUNÇÕES ÚTEIS
-local function GetTeam(plr)
-    return plr.Team or nil
-end
+    CGFloat framebufferScale = view.window.screen.nativeScale ?: UIScreen.mainScreen.nativeScale;
+    io.DisplayFramebufferScale = ImVec2(framebufferScale, framebufferScale);
+    io.DeltaTime = 1 / float(view.preferredFramesPerSecond ?: 60);
 
--- // CRIAÇÃO DO ESP
-local function CreateESP(player)
-    if player == game.Players.LocalPlayer then return end
+    id<MTLCommandBuffer> commandBuffer = [self.commandQueue commandBuffer];
 
-    local box = Drawing.new("Square")
-    box.Thickness = Settings.BoxThickness
-    box.Color = Settings.BoxColor
-    box.Filled = false
+    hideRecordTextfield.secureTextEntry = StreamerMode;
 
-    local line = Drawing.new("Line")
-    line.Thickness = Settings.LineThickness
-    line.Color = Settings.LineColor
+    if (MenDeal == true) {
+        [self.view setUserInteractionEnabled:YES];
+        [self.view.superview setUserInteractionEnabled:YES];
+        [menuTouchView setUserInteractionEnabled:YES];
+    } else {
+        [self.view setUserInteractionEnabled:NO];
+        [self.view.superview setUserInteractionEnabled:NO];
+        [menuTouchView setUserInteractionEnabled:NO];
+    }
 
-    game:GetService("RunService").RenderStepped:Connect(function()
-        pcall(function()
-            if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") or not player.Character:FindFirstChild("Humanoid") then
-                box.Visible = false
-                line.Visible = false
-                return
-            end
+    MTLRenderPassDescriptor* renderPassDescriptor = view.currentRenderPassDescriptor;
+    if (renderPassDescriptor != nil) {
+        id<MTLRenderCommandEncoder> renderEncoder = [commandBuffer renderCommandEncoderWithDescriptor:renderPassDescriptor];
+        [renderEncoder pushDebugGroup:@"ImGui Jane"];
 
-            if Settings.TeamCheck and GetTeam(player) == GetTeam(game.Players.LocalPlayer) then
-                box.Visible = false
-                line.Visible = false
-                return
-            end
+        ImGui_ImplMetal_NewFrame(renderPassDescriptor);
+        ImGui::NewFrame();
+        ImGuiStyle& style = ImGui::GetStyle();
+        ImFont* font = ImGui::GetFont();
+        font->Scale = 16.f / font->FontSize;
 
-            local root = player.Character.HumanoidRootPart
-            local head = player.Character:FindFirstChild("Head")
+        CGFloat x = (([UIApplication sharedApplication].windows[0].rootViewController.view.frame.size.width) - 340) / 2;
+        CGFloat y = (([UIApplication sharedApplication].windows[0].rootViewController.view.frame.size.height) - 250) / 2;
 
-            local rootPos, rootVis = workspace.CurrentCamera:WorldToViewportPoint(root.Position)
-            local headPos = workspace.CurrentCamera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
-            local legPos = workspace.CurrentCamera:WorldToViewportPoint(root.Position - Vector3.new(0, 3, 0))
+        ImGui::SetNextWindowPos(ImVec2(x, y), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(340, 250), ImGuiCond_FirstUseEver);
 
-            if rootVis then
-                if Settings.BoxEnabled then
-                    box.Size = Vector2.new(2000 / rootPos.Z, headPos.Y - legPos.Y)
-                    box.Position = Vector2.new(rootPos.X - box.Size.X / 2, rootPos.Y - box.Size.Y / 2)
-                    box.Color = Settings.BoxColor
-                    box.Visible = true
-                else
-                    box.Visible = false
-                end
+        if (MenDeal == true) {
+            ImGui::SetNextWindowSize(ImVec2(380, 260), ImGuiCond_Always);
+            ImGui::Begin("FFH4X KUSH", &MenDeal, ImGuiWindowFlags_NoResize);
 
-                if Settings.LineEnabled then
-                    line.From = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y)
-                    line.To = Vector2.new(rootPos.X, rootPos.Y)
-                    line.Color = Settings.LineColor
-                    line.Visible = true
-                else
-                    line.Visible = false
-                end
-            else
-                box.Visible = false
-                line.Visible = false
-            end
-        end)
-    end)
-end
+            // ------------------------
+            // Menu de ESP
+            // ------------------------
+            if (ImGui::CollapsingHeader("Configurações de ESP", ImGuiTreeNodeFlags_DefaultOpen))
+            {
+                ImGui::Checkbox("ESP Box", &espBox);
+                ImGui::Checkbox("ESP Linha", &espLine);
+                ImGui::Checkbox("Team Check", &teamCheck);
 
--- // Adiciona para todos os jogadores
-for _, plr in pairs(game.Players:GetPlayers()) do
-    CreateESP(plr)
-end
+                ImGui::Text("Cor da Caixa:");
+                ImGui::ColorEdit4("##BoxColor", (float*)&boxColor, ImGuiColorEditFlags_NoInputs);
 
--- // Quando entra novo jogador
-game.Players.PlayerAdded:Connect(CreateESP)
+                ImGui::Text("Cor da Linha:");
+                ImGui::ColorEdit4("##LineColor", (float*)&lineColor, ImGuiColorEditFlags_NoInputs);
+            }
+
+            ImGui::End();
+        }
+
+        // =======================
+        // Desenhar ESP aqui
+        // =======================
+        ImDrawList* drawList = ImGui::GetBackgroundDrawList();
+        for (auto& player : playersList) { // playersList = vetor dos jogadores
+            DrawESPForPlayer(player, drawList);
+        }
+
+        ImGui::Render();
+        ImGui_ImplMetal_RenderDrawData(ImGui::GetDrawData(), commandBuffer, renderEncoder);
+
+        [renderEncoder popDebugGroup];
+        [renderEncoder endEncoding];
+        [commandBuffer presentDrawable:view.currentDrawable];
+    }
+
+    [commandBuffer commit];
+}
