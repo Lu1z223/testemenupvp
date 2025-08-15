@@ -2,7 +2,6 @@
 -- Injection ModMenu com ESP para celular
 -- =========================================
 
--- Biblioteca ArrayField
 local ArrayField = loadstring(game:HttpGet("https://raw.githubusercontent.com/Hosvile/Refinement/main/MC%3AArrayfield%20Library"))()
 
 -- Criação da janela
@@ -21,7 +20,6 @@ local Window = ArrayField:CreateWindow({
 local ESP_Tab = Window:CreateTab("ESP")
 local ESP_Section = ESP_Tab:CreateSection("ESP Settings")
 
--- Configurações ESP
 local ESPSettings = {
     Enabled = true,
     Box = true,
@@ -31,70 +29,13 @@ local ESPSettings = {
     LineColor = Color3.fromRGB(255,0,0)
 }
 
--- Toggle ESP Ativo
-ESP_Tab:CreateToggle({
-    Name = "ESP Ativo",
-    SectionParent = ESP_Section,
-    CurrentValue = true,
-    Flag = "ESPEnabled",
-    Callback = function(Value)
-        ESPSettings.Enabled = Value
-    end
-})
+ESP_Tab:CreateToggle({Name = "ESP Ativo", SectionParent = ESP_Section, CurrentValue = true, Flag = "ESPEnabled", Callback = function(Value) ESPSettings.Enabled = Value end})
+ESP_Tab:CreateToggle({Name = "ESP Box", SectionParent = ESP_Section, CurrentValue = true, Flag = "ESPBox", Callback = function(Value) ESPSettings.Box = Value end})
+ESP_Tab:CreateToggle({Name = "ESP Linha", SectionParent = ESP_Section, CurrentValue = true, Flag = "ESPLine", Callback = function(Value) ESPSettings.Line = Value end})
+ESP_Tab:CreateToggle({Name = "Team Check", SectionParent = ESP_Section, CurrentValue = true, Flag = "ESPTeamCheck", Callback = function(Value) ESPSettings.TeamCheck = Value end})
 
--- Toggle Box
-ESP_Tab:CreateToggle({
-    Name = "ESP Box",
-    SectionParent = ESP_Section,
-    CurrentValue = true,
-    Flag = "ESPBox",
-    Callback = function(Value)
-        ESPSettings.Box = Value
-    end
-})
-
--- Toggle Linha
-ESP_Tab:CreateToggle({
-    Name = "ESP Linha",
-    SectionParent = ESP_Section,
-    CurrentValue = true,
-    Flag = "ESPLine",
-    Callback = function(Value)
-        ESPSettings.Line = Value
-    end
-})
-
--- Toggle Team Check
-ESP_Tab:CreateToggle({
-    Name = "Team Check",
-    SectionParent = ESP_Section,
-    CurrentValue = true,
-    Flag = "ESPTeamCheck",
-    Callback = function(Value)
-        ESPSettings.TeamCheck = Value
-    end
-})
-
--- ColorPickers
-ESP_Tab:CreateColorPicker({
-    Name = "Cor Box",
-    SectionParent = ESP_Section,
-    Color = ESPSettings.BoxColor,
-    Flag = "ESPBoxColor",
-    Callback = function(Value)
-        ESPSettings.BoxColor = Value
-    end
-})
-
-ESP_Tab:CreateColorPicker({
-    Name = "Cor Linha",
-    SectionParent = ESP_Section,
-    Color = ESPSettings.LineColor,
-    Flag = "ESPLineColor",
-    Callback = function(Value)
-        ESPSettings.LineColor = Value
-    end
-})
+ESP_Tab:CreateColorPicker({Name = "Cor Box", SectionParent = ESP_Section, Color = ESPSettings.BoxColor, Flag = "ESPBoxColor", Callback = function(Value) ESPSettings.BoxColor = Value end})
+ESP_Tab:CreateColorPicker({Name = "Cor Linha", SectionParent = ESP_Section, Color = ESPSettings.LineColor, Flag = "ESPLineColor", Callback = function(Value) ESPSettings.LineColor = Value end})
 
 -- ========================
 -- Função ESP
@@ -119,9 +60,7 @@ local function CreateESP(player)
     ESPObjects[player] = {Box = box, Line = line}
 end
 
-for _, plr in pairs(Players:GetPlayers()) do
-    CreateESP(plr)
-end
+for _, plr in pairs(Players:GetPlayers()) do CreateESP(plr) end
 Players.PlayerAdded:Connect(CreateESP)
 
 RunService.RenderStepped:Connect(function()
@@ -161,18 +100,14 @@ RunService.RenderStepped:Connect(function()
                 objects.Box.Position = Vector2.new(rootPos.X - width/2, rootPos.Y - height/2)
                 objects.Box.Color = ESPSettings.BoxColor
                 objects.Box.Visible = true
-            else
-                objects.Box.Visible = false
-            end
+            else objects.Box.Visible = false end
 
             if ESPSettings.Line then
                 objects.Line.From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y)
                 objects.Line.To = Vector2.new(rootPos.X, rootPos.Y)
                 objects.Line.Color = ESPSettings.LineColor
                 objects.Line.Visible = true
-            else
-                objects.Line.Visible = false
-            end
+            else objects.Line.Visible = false end
         else
             objects.Box.Visible = false
             objects.Line.Visible = false
@@ -181,12 +116,14 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- ========================
--- Botão flutuante para celular
+-- Botões flutuantes para celular
 -- ========================
+local CoreGui = game:GetService("CoreGui")
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "InjectionModMenuGui"
-ScreenGui.Parent = game:GetService("CoreGui")
+ScreenGui.Parent = CoreGui
 
+-- Botão principal para abrir/fechar menu
 local ToggleButton = Instance.new("TextButton")
 ToggleButton.Size = UDim2.new(0,120,0,40)
 ToggleButton.Position = UDim2.new(0,20,0,20)
@@ -195,14 +132,31 @@ ToggleButton.TextColor3 = Color3.new(1,1,1)
 ToggleButton.Text = "Menu"
 ToggleButton.Parent = ScreenGui
 
+-- Botão "Abrir Menu" que aparece somente quando o menu está fechado
+local OpenMenuButton = Instance.new("TextButton")
+OpenMenuButton.Size = UDim2.new(0,120,0,40)
+OpenMenuButton.Position = UDim2.new(0,20,0,20)
+OpenMenuButton.BackgroundColor3 = Color3.fromRGB(50,50,50)
+OpenMenuButton.TextColor3 = Color3.new(1,1,1)
+OpenMenuButton.Text = "Abrir Menu"
+OpenMenuButton.Visible = false
+OpenMenuButton.Parent = ScreenGui
+
+-- Controle da visibilidade
 local MenuVisible = true
+
 ToggleButton.MouseButton1Click:Connect(function()
-    if MenuVisible then
-        Window:Hide()
-    else
-        Window:Show()
-    end
-    MenuVisible = not MenuVisible
+    Window:Hide()
+    MenuVisible = false
+    ToggleButton.Visible = false
+    OpenMenuButton.Visible = true
 end)
 
-print("Injection ModMenu carregado! Use o botão flutuante para abrir/fechar o menu no celular.")
+OpenMenuButton.MouseButton1Click:Connect(function()
+    Window:Show()
+    MenuVisible = true
+    ToggleButton.Visible = true
+    OpenMenuButton.Visible = false
+end)
+
+print("Injection ModMenu carregado! Use os botões flutuantes para abrir/fechar o menu no celular.")
