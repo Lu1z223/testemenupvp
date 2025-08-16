@@ -9,16 +9,16 @@ local Settings = {
     LineThickness = 1,
 
     -- Aimbot
-    AimbotEnabled = false,
+    AimbotEnabled = true,
     AimFOV = 100,
     AimPart = "Head",
-    AimSmoothness = 0.2
+    AimSmoothness = 0.25
 }
 
 -- // INTERFACE
 local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
 local Frame = Instance.new("Frame", ScreenGui)
-Frame.Size = UDim2.new(0, 200, 0, 200)
+Frame.Size = UDim2.new(0, 220, 0, 250)
 Frame.Position = UDim2.new(0.05, 0, 0.2, 0)
 Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 Frame.Active = true
@@ -48,16 +48,25 @@ CreateButton("Toggle Team Check", 65, function()
 end)
 
 -- Botões Aimbot
-CreateButton("Toggle Aimbot", 95, function()
-    Settings.AimbotEnabled = not Settings.AimbotEnabled
-end)
-
-CreateButton("Aumentar FOV", 125, function()
+CreateButton("Aumentar FOV", 95, function()
     Settings.AimFOV = Settings.AimFOV + 10
 end)
 
-CreateButton("Diminuir FOV", 155, function()
+CreateButton("Diminuir FOV", 125, function()
     Settings.AimFOV = math.max(10, Settings.AimFOV - 10)
+end)
+
+-- Mostrar valor do FOV
+local FOVLabel = Instance.new("TextLabel", Frame)
+FOVLabel.Size = UDim2.new(1, -10, 0, 25)
+FOVLabel.Position = UDim2.new(0, 5, 0, 155)
+FOVLabel.BackgroundTransparency = 1
+FOVLabel.TextColor3 = Color3.new(1, 1, 1)
+FOVLabel.Text = "FOV: " .. Settings.AimFOV
+
+-- Atualizar valor do FOV na tela
+game:GetService("RunService").RenderStepped:Connect(function()
+    FOVLabel.Text = "FOV: " .. Settings.AimFOV
 end)
 
 -- // FUNÇÕES ÚTEIS
@@ -148,30 +157,36 @@ local function CreateESP(player)
     end)
 end
 
--- // Adiciona para todos os jogadores
+-- Adiciona ESP
 for _, plr in pairs(game.Players:GetPlayers()) do
     CreateESP(plr)
 end
 game.Players.PlayerAdded:Connect(CreateESP)
 
--- // AIMBOT LOOP
+-- // FOV Circle
 local fovCircle = Drawing.new("Circle")
 fovCircle.Thickness = 1
 fovCircle.Filled = false
 fovCircle.Color = Color3.fromRGB(0, 255, 0)
 fovCircle.Transparency = 1
 
+-- // AIMBOT AO ATIRAR
+local UserInputService = game:GetService("UserInputService")
+
 game:GetService("RunService").RenderStepped:Connect(function()
     fovCircle.Position = Vector2.new(workspace.CurrentCamera.ViewportSize.X/2, workspace.CurrentCamera.ViewportSize.Y/2)
     fovCircle.Radius = Settings.AimFOV
     fovCircle.Visible = Settings.AimbotEnabled
 
-    if Settings.AimbotEnabled and game.UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
+    -- Verifica se está atirando
+    if Settings.AimbotEnabled and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
         local target = GetClosestPlayer()
         if target and target.Character and target.Character:FindFirstChild(Settings.AimPart) then
             local targetPos = workspace.CurrentCamera:WorldToViewportPoint(target.Character[Settings.AimPart].Position)
-            mousemoverel((targetPos.X - workspace.CurrentCamera.ViewportSize.X/2) * Settings.AimSmoothness,
-                         (targetPos.Y - workspace.CurrentCamera.ViewportSize.Y/2) * Settings.AimSmoothness)
+            mousemoverel(
+                (targetPos.X - workspace.CurrentCamera.ViewportSize.X/2) * Settings.AimSmoothness,
+                (targetPos.Y - workspace.CurrentCamera.ViewportSize.Y/2) * Settings.AimSmoothness
+            )
         end
     end
 end)
